@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>am-not-cute — find the not-cute</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; background: linear-gradient(120deg,#ff9a9e,#fad0c4); color:#222; }
+    .card { background: white; border-radius: 16px; padding: 18px; margin: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    .grid { display: grid; grid-template-columns: 1fr 320px; gap: 12px; }
+    .crazy { transform: rotate(-1deg); }
+    img.avatar { width:80px; height:80px; border-radius:50%; object-fit:cover; border:4px solid #fff; box-shadow:0 6px 18px rgba(0,0,0,0.12); }
+    #messages div { padding:6px; margin:6px 0; border-radius:8px; background:#f6f6f6; }
+  </style>
+</head>
+<body>
+  <div class="card crazy">
+    <h1>am-not-cute</h1>
+    <p>Find the not-cute — a vulnerable playground for hunters.</p>
+    <div class="grid">
+      <div>
+        <h2>Sign up</h2>
+        <form id="signup" class="card">
+          <input name="username" placeholder="username"><br>
+          <input name="password" placeholder="password" type="password"><br>
+          <input name="email" placeholder="email"><br>
+          <input name="age" placeholder="age" type="number"><br>
+          <input name="gender" placeholder="gender"><br>
+          <input name="location" placeholder="location"><br>
+          <label>Is cute? <input name="is_cute" type="checkbox"></label><br>
+          <input name="agry_level" placeholder="agry level" type="number"><br>
+          <input name="interests" placeholder="interests (comma)"><br>
+          <textarea name="bio" placeholder="bio"></textarea><br>
+          <button>Sign up</button>
+        </form>
+        <h2>Public chat</h2>
+        <div id="messages"></div>
+        <input id="msg" placeholder="say something"><button id="send">Send</button>
+      </div>
+      <div class="card">
+        <h3>Profile preview</h3>
+        <div id="profile"></div>
+        <h3>Upload</h3>
+        <form id="uploadForm" enctype="multipart/form-data">
+          <input type="file" name="picture"><button>Upload</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    // XSS challenges. Inasababishwa hapa
+    function append(msg){ const d=document.createElement('div'); d.innerHTML=msg; document.getElementById('messages').appendChild(d); }
+    append('<b>Welcome to am-not-cute — have fun hunting!</b>');
+
+    document.getElementById('signup').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const body = Object.fromEntries(fd.entries());
+      body.is_cute = fd.get('is_cute') ? 'true' : 'false';
+      const res = await fetch('/api/auth/signup', { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const j = await res.json();
+      append('Signed up: ' + JSON.stringify(j));
+    });
+
+    document.getElementById('send').addEventListener('click', async () => {
+      const msg = document.getElementById('msg').value;
+      // naive: send to websocket if exists or echo
+      append('<b>me:</b> ' + msg);
+    });
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const res = await fetch('/api/upload/profile_picture', { method:'POST', body: fd });
+      const j = await res.json();
+      append('Uploaded: ' + JSON.stringify(j));
+    });
+  </script>
+</body>
+</html>
